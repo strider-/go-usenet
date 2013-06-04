@@ -12,6 +12,20 @@ type Nzb struct {
 	Files []File   `xml:"file"`
 }
 
+func (n *Nzb) GenerateQueue(status string) []*QueueItem {
+	result := make([]*QueueItem, 0)
+	if len(status) == 0 {
+		status = "Queued"
+	}
+
+	for _, file := range n.Files {
+		for _, seg := range file.Segments {
+			result = append(result, &QueueItem{file.Subject, seg.Number, uint32(len(file.Segments)), seg.MessageId, status})
+		}
+	}
+	return result
+}
+
 type Meta struct {
 	Type  string `xml:"type,attr"`
 	Value string `xml:",innerxml"`
@@ -35,7 +49,15 @@ type Segment struct {
 	MessageId string `xml:",innerxml"`
 }
 
-func OpenNzb(filename string) (*Nzb, error) {
+type QueueItem struct {
+	FileSubject   string
+	SegmentNumber uint32
+	TotalSegments uint32
+	MessageId     string
+	Status        string
+}
+
+func ReadNzb(filename string) (*Nzb, error) {
 	nzb := &Nzb{}
 	file, err := ioutil.ReadFile(filename)
 	if err != nil {

@@ -14,6 +14,16 @@ type Decoder struct {
 	r io.Reader
 }
 
+type Part struct {
+	Crc32, PartCrc32, ExpectedCrc32 uint32
+	LineSize                        uint32
+	TotalSize, PartSize             uint32
+	Part, Total                     uint32
+	Begin, End                      uint32
+	Name                            string
+	Body                            []byte
+}
+
 func (d *Decoder) Decode() (*Part, error) {
 	esc := new(bool)
 	part := &Part{Body: make([]byte, 0)}
@@ -59,16 +69,6 @@ func (d *Decoder) decodeLine(line []byte, esc *bool) []byte {
 		}
 	}
 	return line[:c]
-}
-
-type Part struct {
-	Crc32, PartCrc32, ExpectedCrc32 uint32
-	LineSize                        uint32
-	TotalSize, PartSize             uint32
-	Part, Total                     uint32
-	Begin, End                      uint32
-	Name                            string
-	Body                            []byte
 }
 
 func (p *Part) readHeader(reader *bufio.Reader) error {
