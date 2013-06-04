@@ -135,26 +135,18 @@ func (c *Conn) sendCmd(cmd string, expectCode int) (int, string, error) {
 }
 
 func (c *Conn) fillHeaders(article *Article) error {
-	rawHeaders := make([]string, 0)
-
 	for {
 		if cur, err := c.baseConn.ReadLine(); err != nil {
 			return err
 		} else {
 			if cur != "" && cur != "." {
-				rawHeaders = append(rawHeaders, cur)
+				split := strings.SplitN(cur, ":", 2)
+				article.Headers[split[0]] = split[1]
 			} else {
 				break
 			}
 		}
 	}
 
-	result := make(map[string]string)
-	for index := range rawHeaders {
-		split := strings.SplitN(rawHeaders[index], ":", 2)
-		result[split[0]] = split[1]
-	}
-
-	article.Headers = result
 	return nil
 }
