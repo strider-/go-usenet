@@ -34,12 +34,10 @@ func (d *Decoder) Decode() (*Part, error) {
 	}
 
 	for {
-		line, err := reader.ReadBytes('\n')
+		line, err := readTrimmedLine(reader)
 		if err != nil {
 			return nil, err
 		}
-
-		line = bytes.TrimRight(line, "\r\n")
 
 		if len(line) > 5 && string(line[:5]) == "=yend" {
 			part.parseYencTrailer(string(line)[6:])
@@ -52,6 +50,14 @@ func (d *Decoder) Decode() (*Part, error) {
 	part.checksum()
 
 	return part, nil
+}
+
+func readTrimmedLine(r *bufio.Reader) ([]byte, error) {
+	if line, err := r.ReadBytes('\n'); err != nil {
+		return nil, err
+	} else {
+		return bytes.TrimRight(line, "\r\n"), nil
+	}
 }
 
 func (d *Decoder) decodeLine(line []byte, esc *bool) []byte {
@@ -71,12 +77,16 @@ func (d *Decoder) decodeLine(line []byte, esc *bool) []byte {
 	return line[:c]
 }
 
+func (p *Part) ValidPartCrc() bool {
+	return p.Crc32 == p.PartCrc32
+}
+
 func (p *Part) readHeader(reader *bufio.Reader) error {
-	headerline, err := reader.ReadBytes('\n')
+	headerline, err := readTrimmedLine(reader)
 	if err != nil {
 		return err
 	}
-	headerline = bytes.TrimRight(headerline, "\r\n")
+
 	if len(headerline) > 7 && string(headerline[:7]) == "=ybegin" {
 		p.parseYencHeader(string(headerline)[8:])
 	} else {
@@ -84,11 +94,10 @@ func (p *Part) readHeader(reader *bufio.Reader) error {
 	}
 
 	if p.Part > 0 {
-		partline, err := reader.ReadBytes('\n')
+		partline, err := readTrimmedLine(reader)
 		if err != nil {
 			return err
 		}
-		partline = bytes.TrimRight(partline, "\r\n")
 		if len(partline) > 6 && string(partline[:6]) == "=ypart" {
 			p.parseYencPart(string(partline)[7:])
 		} else {
@@ -130,11 +139,11 @@ func (p *Part) parseYencPart(line string) {
 		switch key {
 		case "begin":
 			if i, e := strconv.ParseUint(value, 10, 32); e == nil {
-				p.Begin = uint32(i)
+				p.Begin = uint32(i) - 1
 			}
 		case "end":
 			if i, e := strconv.ParseUint(value, 10, 32); e == nil {
-				p.End = uint32(i)
+				p.End = uint32(i) - 1
 			}
 		}
 	}

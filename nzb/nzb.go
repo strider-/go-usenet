@@ -3,6 +3,7 @@ package nzb
 import (
 	"encoding/xml"
 	"io/ioutil"
+	"nntp/decoders"
 	"time"
 )
 
@@ -20,7 +21,7 @@ func (n *Nzb) GenerateQueue(status string) []*QueueItem {
 
 	for _, file := range n.Files {
 		for _, seg := range file.Segments {
-			result = append(result, &QueueItem{file.Subject, seg.Number, uint32(len(file.Segments)), seg.MessageId, status})
+			result = append(result, &QueueItem{file.Subject, seg.Number, uint32(len(file.Segments)), seg.MessageId, status, nil})
 		}
 	}
 	return result
@@ -55,6 +56,7 @@ type QueueItem struct {
 	TotalSegments uint32
 	MessageId     string
 	Status        string
+	Part          *decoders.Part
 }
 
 func ReadNzb(filename string) (*Nzb, error) {
