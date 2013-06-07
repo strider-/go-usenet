@@ -3,6 +3,7 @@ package nntp
 import (
 	"fmt"
 	"net/textproto"
+	"nntp/decoders"
 	"strconv"
 	"strings"
 	"time"
@@ -92,7 +93,7 @@ func (c *Conn) Head(mid string) (article *Article, err error) {
 
 func (c *Conn) Article(mid string) (article *Article, err error) {
 	article = &Article{}
-	mid = strings.NewReplacer("<", "", ">", "").Replace(mid)
+	mid = stripBrackets(mid)
 
 	if _, _, err = c.sendCmd(fmt.Sprintf("ARTICLE <%s>", mid), 220); err != nil {
 		return
@@ -104,6 +105,21 @@ func (c *Conn) Article(mid string) (article *Article, err error) {
 
 	article.Body, err = c.baseConn.ReadDotBytes()
 	return
+}
+
+func (c *Conn) DecodedArticle(mid string) (*decoders.Part, error) {
+	mid = stripBrackets(mid)
+	if _, _, err := c.sendCmd(fmt.Sprintf("BODY <%s>", mid), 222); err != nil {
+		return nil, err
+	}
+
+	dec := decoders.NewYencStreamingDecoder(c.baseConn.R)
+	part, err := dec.Decode()
+	if err != nil {
+		return nil, err
+	}
+	c.baseConn.ReadDotBytes()
+	return part, nil
 }
 
 func (c *Conn) Exists(mid string) bool {

@@ -188,3 +188,7 @@ func (p *Part) getKeyValuePairs(line string) (result map[string]string) {
 func NewYencDecoder(content []byte) *Decoder {
 	return &Decoder{r: bytes.NewReader(content)}
 }
+
+func NewYencStreamingDecoder(reader io.Reader) *Decoder {
+	return &Decoder{r: reader}
+}

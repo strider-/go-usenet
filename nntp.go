@@ -28,3 +28,7 @@ func Dial(addr string, ssl bool) (*Conn, error) {
 
 	return conn, nil
 }
+
+func stripBrackets(mid string) string {
+	return strings.NewReplacer("<", "", ">", "").Replace(mid)
+}
