@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/binary"
-	"errors"
 	"io"
 	"os"
 )
@@ -47,10 +46,6 @@ func Packets(file string) ([]Packet, error) {
 			}
 		}
 
-		if !h.ValidSequence() {
-			return nil, errors.New("invalid sequence")
-		}
-
 		f.Read(buf)
 		binary.Read(bytes.NewBuffer(buf), binary.LittleEndian, &h.Length)
 		f.Read(h.PacketMD5)
@@ -77,7 +72,7 @@ func createPacket(h *Header) Packet {
 	case typeFileDescPacket:
 		return &FileDescPacket{h, nil, nil, nil, 0, ""}
 	case typeIFSCPacket:
-		return &IFSCPacket{h, nil}
+		return &IFSCPacket{h, nil, nil}
 	case typeRecoverySlicePacket:
 		return &RecoverySlicePacket{h, 0, nil}
 	case typeCreatorPacket:

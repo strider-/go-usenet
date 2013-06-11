@@ -1,5 +1,11 @@
 package par2
 
+import (
+	"bytes"
+	"encoding/binary"
+	"strings"
+)
+
 type FileDescPacket struct {
 	*Header
 	FileID     []byte
@@ -14,5 +20,10 @@ func (f *FileDescPacket) PacketHeader() *Header {
 }
 
 func (f *FileDescPacket) readBody(body []byte) {
-
+	buff := bytes.NewBuffer(body)
+	f.FileID = buff.Next(16)
+	f.MD5 = buff.Next(16)
+	f.MiniMD5 = buff.Next(16)
+	binary.Read(buff, binary.LittleEndian, &f.FileLength)
+	f.Filename = strings.TrimRight(string(buff.Next(buff.Len())), "\000")
 }
