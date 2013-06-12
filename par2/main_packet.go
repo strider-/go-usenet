@@ -7,7 +7,7 @@ import (
 
 type MainPacket struct {
 	*Header
-	SliceSize             uint64
+	BlockSize             uint64
 	RecoverySetCount      uint32
 	RecoverySetFileIDs    [][]byte
 	NonRecoverySetFileIDs [][]byte
@@ -22,7 +22,7 @@ func (m *MainPacket) readBody(body []byte) {
 	m.NonRecoverySetFileIDs = make([][]byte, 0)
 
 	buff := bytes.NewBuffer(body)
-	binary.Read(buff, binary.LittleEndian, &m.SliceSize)
+	binary.Read(buff, binary.LittleEndian, &m.BlockSize)
 	binary.Read(buff, binary.LittleEndian, &m.RecoverySetCount)
 
 	for i := 0; i < int(m.RecoverySetCount); i++ {

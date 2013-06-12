@@ -1,6 +1,11 @@
 package par2
 
-var validSequence []byte = []byte{'P', 'A', 'R', '2', 0, 'P', 'K', 'T'}
+import (
+	"encoding/binary"
+	"io"
+)
+
+const validSequence string = "PAR2\000PKT"
 
 type Header struct {
 	Sequence      []byte
@@ -11,13 +16,24 @@ type Header struct {
 	Damaged       bool
 }
 
-func (h *Header) init() {
+func (h *Header) fill(r io.Reader) error {
 	h.Sequence = make([]byte, 8)
 	h.PacketMD5 = make([]byte, 16)
 	h.RecoverySetId = make([]byte, 16)
 	h.Type = make([]byte, 16)
+
+	_, err := r.Read(h.Sequence)
+	if err != nil {
+		return err
+	}
+
+	binary.Read(r, binary.LittleEndian, &h.Length)
+	r.Read(h.PacketMD5)
+	r.Read(h.RecoverySetId)
+	r.Read(h.Type)
+	return nil
 }
 
 func (h *Header) ValidSequence() bool {
-	return string(h.Sequence) == string(validSequence)
+	return string(h.Sequence) == validSequence
 }

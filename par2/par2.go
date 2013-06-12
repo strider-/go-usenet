@@ -3,9 +3,9 @@ package par2
 import (
 	"bytes"
 	"crypto/md5"
-	"encoding/binary"
 	"io"
 	"os"
+	"path/filepath"
 )
 
 const (
@@ -22,47 +22,70 @@ type Packet interface {
 	PacketHeader() *Header
 }
 
+func allParFiles(file string) ([]string, error) {
+	dir, fname := filepath.Split(file)
+	ext := filepath.Ext(fname)
+	return filepath.Glob(dir + fname[:len(fname)-len(ext)] + ".*par2")
+}
+
 func Packets(file string) ([]Packet, error) {
-	f, err := os.Open(file)
+	pars, err := allParFiles(file)
 	if err != nil {
 		return nil, err
 	}
 
-	defer f.Close()
 	packets := make([]Packet, 0)
-
-	for {
-		h := new(Header)
-		h.init()
-
-		buf := make([]byte, 8)
-
-		_, err := f.Read(h.Sequence)
+	for _, par := range pars {
+		f, err := os.Open(par)
 		if err != nil {
-			if err == io.EOF {
-				break
-			} else {
-				return nil, err
-			}
+			return nil, err
 		}
 
-		f.Read(buf)
-		binary.Read(bytes.NewBuffer(buf), binary.LittleEndian, &h.Length)
-		f.Read(h.PacketMD5)
-		f.Read(h.RecoverySetId)
-		f.Read(h.Type)
+		defer f.Close()
+		stat, _ := f.Stat()
+		par_size := stat.Size()
 
-		buf = make([]byte, h.Length-headerLength)
-		f.Read(buf)
+		for {
+			h := new(Header)
+			if err := h.fill(f); err == io.EOF {
+				break
+			} else if err != nil {
+				return nil, err
+			}
 
-		p := createPacket(h)
-		verifyPacket(h, buf)
-		p.readBody(buf)
+			if !h.ValidSequence() {
+				r, _ := f.Seek(-7, os.SEEK_CUR)
+				if (par_size - r) < 8 {
+					break
+				}
+				continue
+			}
 
-		packets = append(packets, p)
+			buf := make([]byte, h.Length-headerLength)
+			f.Read(buf)
+
+			p := createPacket(h)
+			verifyPacket(h, buf)
+			p.readBody(buf)
+
+			if !h.Damaged && !contains(packets, p) {
+				packets = append(packets, p)
+			}
+		}
 	}
 
 	return packets, nil
+}
+
+func contains(packets []Packet, packet Packet) bool {
+	header := packet.PacketHeader()
+	for _, p := range packets {
+		h := p.PacketHeader()
+		if string(h.PacketMD5) == string(header.PacketMD5) {
+			return true
+		}
+	}
+	return false
 }
 
 func createPacket(h *Header) Packet {
