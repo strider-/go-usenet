@@ -15,7 +15,7 @@ type FileDescPacket struct {
 	Filename   string
 }
 
-func (f *FileDescPacket) PacketHeader() *Header {
+func (f *FileDescPacket) packetHeader() *Header {
 	return f.Header
 }
 

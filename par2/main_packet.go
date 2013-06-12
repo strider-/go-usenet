@@ -13,7 +13,7 @@ type MainPacket struct {
 	NonRecoverySetFileIDs [][]byte
 }
 
-func (m *MainPacket) PacketHeader() *Header {
+func (m *MainPacket) packetHeader() *Header {
 	return m.Header
 }
 

@@ -20,7 +20,7 @@ const (
 
 type Packet interface {
 	readBody([]byte)
-	PacketHeader() *Header
+	packetHeader() *Header
 }
 
 type ParInfo struct {
@@ -131,9 +131,9 @@ func packets(files []string) ([]Packet, error) {
 }
 
 func contains(packets []Packet, packet Packet) bool {
-	header := packet.PacketHeader()
+	header := packet.packetHeader()
 	for _, p := range packets {
-		h := p.PacketHeader()
+		h := p.packetHeader()
 		if string(h.PacketMD5) == string(header.PacketMD5) {
 			return true
 		}

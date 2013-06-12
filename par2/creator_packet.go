@@ -7,7 +7,7 @@ type CreatorPacket struct {
 	Creator string
 }
 
-func (c *CreatorPacket) PacketHeader() *Header {
+func (c *CreatorPacket) packetHeader() *Header {
 	return c.Header
 }
 

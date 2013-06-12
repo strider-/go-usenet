@@ -5,7 +5,7 @@ type UnknownPacket struct {
 	Body []byte
 }
 
-func (u *UnknownPacket) PacketHeader() *Header {
+func (u *UnknownPacket) packetHeader() *Header {
 	return u.Header
 }
 

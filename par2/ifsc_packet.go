@@ -15,7 +15,7 @@ type ChecksumPair struct {
 	CRC32 []byte
 }
 
-func (i *IFSCPacket) PacketHeader() *Header {
+func (i *IFSCPacket) packetHeader() *Header {
 	return i.Header
 }
 

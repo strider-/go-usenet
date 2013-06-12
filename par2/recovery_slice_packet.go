@@ -11,7 +11,7 @@ type RecoverySlicePacket struct {
 	RecoveryData []byte
 }
 
-func (r *RecoverySlicePacket) PacketHeader() *Header {
+func (r *RecoverySlicePacket) packetHeader() *Header {
 	return r.Header
 }
 
