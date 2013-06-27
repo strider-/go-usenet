@@ -1,5 +1,4 @@
 Libraries for NNTP connections, parsing NZB files & parchive repair. Able to decode yEnc binaries.
-=============
 
 NNTP
 -------
@@ -28,7 +27,8 @@ NZB support complete
         queue := n.GenerateQueue(defaultStatus)
     }
 
-Par2 support pending: Verification / Reporting complete, Repairing in progress
+Par2 
+support pending: Verification / Reporting complete, Repairing in progress
 -------
     // will read all parchives for the initial .par2
     stat, err := par2.Stat(par2file)    
