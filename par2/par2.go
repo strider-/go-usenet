@@ -31,6 +31,7 @@ type ParInfo struct {
 	ParFiles     []string
 	BlockCount   uint32
 	TotalSize    uint64
+	BaseDir      string
 }
 
 func Stat(file string) (*ParInfo, error) {
@@ -39,12 +40,13 @@ func Stat(file string) (*ParInfo, error) {
 		return nil, err
 	}
 
-	stat := &ParInfo{nil, nil, make([]*File, 0), make([]*RecoverySlicePacket, 0), par_files, 0, 0}
+	stat := &ParInfo{nil, nil, make([]*File, 0), make([]*RecoverySlicePacket, 0), par_files, 0, 0, ""}
 	packets, err := packets(stat.ParFiles)
 	if err != nil {
 		return nil, err
 	}
 
+	stat.BaseDir = filepath.Dir(file)
 	table := make(map[string]*File)
 	for _, p := range packets {
 		switch p.(type) {
@@ -78,6 +80,45 @@ func Stat(file string) (*ParInfo, error) {
 	}
 
 	return stat, nil
+}
+
+func Verify(info *ParInfo) {
+	total_good := 0
+	hash := md5.New()
+
+	for _, file := range info.Files {
+		fname := fmt.Sprintf("%s/%s", info.BaseDir, file.Filename)
+		if _, err := os.Stat(fname); os.IsNotExist(err) {
+			fmt.Printf("\t%s: missing\n", file.Filename)
+			continue
+		}
+
+		good_blocks := 0
+		f, _ := os.Open(fname)
+		defer f.Close()
+
+		for _, pair := range file.Pairs {
+			buf := make([]byte, info.Main.BlockSize)
+			f.Read(buf)
+			hash.Write(buf)
+			if bytes.Equal(hash.Sum(nil), pair.MD5) {
+				good_blocks++
+			}
+			hash.Reset()
+		}
+		total_good += good_blocks
+		fmt.Printf("\t%s: %d/%d blocks available\n", file.Filename, good_blocks, len(file.Pairs))
+	}
+	missing := info.BlockCount - uint32(total_good)
+	fmt.Printf("\t-------\n\t%d missing blocks, %d recovery blocks: ", missing, len(info.RecoveryData))
+
+	if missing == 0 {
+		fmt.Println("Repair not needed.")
+	} else if missing > uint32(len(info.RecoveryData)) {
+		fmt.Println("Repair not possible.")
+	} else {
+		fmt.Println("Repair is required.")
+	}
 }
 
 func allParFiles(file string) ([]string, error) {
