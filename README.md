@@ -17,7 +17,7 @@ NNTP
         /* do something with yEnc decoded article */
     }    
 
-NZB support complete
+NZB
 -------
     if n, err := nzb.ReadNzb(filename); err != nil {
         /* handle error */
@@ -27,9 +27,9 @@ NZB support complete
         queue := n.GenerateQueue(defaultStatus)
     }
 
-Par2 
-support pending: Verification / Reporting complete, Repairing in progress
+Par2
 -------
+    // Verification only dumps to stdout, Stat complete, Repairing in progress
     // will read all parchives for the initial .par2
     stat, err := par2.Stat(par2file)    
     par2.Verify(stat)
