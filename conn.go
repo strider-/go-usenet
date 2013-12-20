@@ -156,6 +156,7 @@ func (c *Conn) XOverview(start, end uint64) ([]Overview, error) {
 
 	for i := range headers[:count] {
 		h := strings.Split(headers[i], "\t")
+		dt, _ := time.Parse("Mon, 02 Jan 2006 15:04:05 MST", h[3])
 		aid, _ := strconv.ParseUint(h[0], 10, 64)
 		bc, _ := strconv.ParseUint(h[6], 10, 64)
 		lc, _ := strconv.ParseUint(h[7], 10, 64)
@@ -163,8 +164,9 @@ func (c *Conn) XOverview(start, end uint64) ([]Overview, error) {
 			ArticleId:  aid,
 			Subject:    h[1],
 			Author:     h[2],
-			MessageId:  h[3],
-			References: h[4],
+			Date:       dt,
+			MessageId:  h[4],
+			References: h[5],
 			Bytes:      bc,
 			Lines:      lc,
 		}
