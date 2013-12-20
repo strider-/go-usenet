@@ -3,6 +3,7 @@ package nntp
 import (
 	"crypto/tls"
 	"net/textproto"
+	"strings"
 )
 
 func Dial(addr string, ssl bool) (*Conn, error) {

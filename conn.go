@@ -1,7 +1,10 @@
 package nntp
 
 import (
+	"bytes"
+	"compress/flate"
 	"fmt"
+	"io"
 	"net/textproto"
 	"nntp/decoders"
 	"strconv"
@@ -10,8 +13,9 @@ import (
 )
 
 type Conn struct {
-	baseConn *textproto.Conn
-	group    string
+	baseConn       *textproto.Conn
+	group          string
+	overviewFields []string
 }
 
 func (c *Conn) Authenticate(user, pass string) error {
@@ -22,6 +26,8 @@ func (c *Conn) Authenticate(user, pass string) error {
 			return err
 		}
 	}
+
+	c.getOverviewFormat()
 
 	return nil
 }
@@ -127,6 +133,46 @@ func (c *Conn) Exists(mid string) bool {
 	return err == nil
 }
 
+func (c *Conn) XOverview(start, end uint64) ([]Overview, error) {
+	if _, _, err := c.sendCmd(fmt.Sprintf("XZVER %d-%d", start, end), 224); err != nil {
+		return nil, err
+	}
+
+	dec := decoders.NewYencStreamingDecoder(c.baseConn.R)
+	part, err := dec.Decode()
+	if err != nil {
+		return nil, err
+	}
+	c.baseConn.ReadDotBytes()
+
+	src := bytes.NewReader(part.Body)
+	r := flate.NewReader(src)
+	var result bytes.Buffer
+	io.Copy(&result, r)
+
+	headers := strings.Split(string(result.Bytes()), "\r\n")
+	count := len(headers) - 1
+	overviews := make([]Overview, count)
+
+	for i := range headers[:count] {
+		h := strings.Split(headers[i], "\t")
+		aid, _ := strconv.ParseUint(h[0], 10, 64)
+		bc, _ := strconv.ParseUint(h[6], 10, 64)
+		lc, _ := strconv.ParseUint(h[7], 10, 64)
+		overviews[i] = Overview{
+			ArticleId:  aid,
+			Subject:    h[1],
+			Author:     h[2],
+			MessageId:  h[3],
+			References: h[4],
+			Bytes:      bc,
+			Lines:      lc,
+		}
+	}
+
+	return overviews, nil
+}
+
 func (c *Conn) Close() error {
 	c.sendCmd("QUIT", 205)
 	return c.baseConn.Close()
@@ -138,6 +184,14 @@ func (c *Conn) Date() (time.Time, error) {
 		return time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC), err
 	}
 	return time.Parse("20060102150405", rawDate)
+}
+
+func (c *Conn) getOverviewFormat() {
+	if _, _, err := c.sendCmd("LIST OVERVIEW.FMT", 215); err != nil {
+		return
+	}
+
+	c.overviewFields, _ = c.baseConn.ReadDotLines()
 }
 
 func (c *Conn) sendCmd(cmd string, expectCode int) (int, string, error) {
