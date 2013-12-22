@@ -156,7 +156,7 @@ func (c *Conn) XOverview(start, end uint64) ([]Overview, error) {
 
 	for i := range headers[:count] {
 		h := strings.Split(headers[i], "\t")
-		dt, _ := time.Parse("Mon, 02 Jan 2006 15:04:05 MST", h[3])
+		dt, _ := c.parseDate(h[3])
 		aid, _ := strconv.ParseUint(h[0], 10, 64)
 		bc, _ := strconv.ParseUint(h[6], 10, 64)
 		lc, _ := strconv.ParseUint(h[7], 10, 64)
@@ -186,6 +186,15 @@ func (c *Conn) Date() (time.Time, error) {
 		return time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC), err
 	}
 	return time.Parse("20060102150405", rawDate)
+}
+
+func (c *Conn) parseDate(date string) (t time.Time, err error) {
+	if t, err := time.Parse("02 Jan 2006 15:04:05 MST", date); err != nil {
+		return t, err
+	} else if t, err := time.Parse("Mon, 02 Jan 2006 15:04:05 MST", date); err != nil {
+		return t, err
+	}
+	return t, err
 }
 
 func (c *Conn) getOverviewFormat() {
